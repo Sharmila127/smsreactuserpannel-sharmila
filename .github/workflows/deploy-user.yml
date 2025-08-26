@@ -9,10 +9,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: user   # go to user/ folder
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -22,19 +18,20 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies & Build
+      - name: Install dependencies & Build (User)
         run: |
+          cd user
           npm ci
           npm run build
 
-      - name: Deploy to S3
+      - name: Deploy to S3 (User Panel)
         uses: jakejarvis/s3-sync-action@v0.5.1
         with:
           args: --acl public-read --follow-symlinks
         env:
           AWS_S3_BUCKET: sms-frontend-apps
           AWS_REGION: ap-south-1
-          SOURCE_DIR: dist
+          SOURCE_DIR: user/dist
           DEST_DIR: user
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
