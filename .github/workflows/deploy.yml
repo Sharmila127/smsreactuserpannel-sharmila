@@ -31,7 +31,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy to S3 (user/)
-        run: aws s3 sync ./dist s3://sms-frontend-all1/user --delete --acl public-read
-
+        run: aws s3 sync ./dist s3://sms-frontend-all1/user --delete 
       - name: Invalidate CloudFront cache
         run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/user/*"
