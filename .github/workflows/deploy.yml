@@ -3,41 +3,33 @@ name: Deploy User App
 on:
   push:
     branches:
-      - main   # runs when pushing to main branch
-  workflow_dispatch: # allow manual trigger
+      - main
+  workflow_dispatch: # manual trigger also allowed
 
 jobs:
   deploy-user:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository with PAT token (fixes token error)
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.GH_PAT }}   # store your PAT as GH_PAT in repo secrets
+          token: ${{ secrets.GH_PAT }}
 
-      # 2. Setup Node.js
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: 18
 
-      # 3. Install dependencies & Build React app
-      - name: Install and Build
+      - name: Install dependencies and Build
         run: |
           npm install
           npm run build
 
-      # 4. Configure AWS credentials
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1   # change if different
-
-      # 5. Deploy to S3
-      - name: Upload User App to S3
+      - name: Deploy to S3 (User App)
         run: |
           aws s3 sync ./build/ s3://sms-frontend-app/user --delete
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-south-1
