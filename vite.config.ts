@@ -1,11 +1,12 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react-swc'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: './',   // ✅ Relative paths for S3/CloudFront
-  plugins: [react()],
+  base: './',       // important for CloudFront root
+  plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-  },
-});
+  }
+})
