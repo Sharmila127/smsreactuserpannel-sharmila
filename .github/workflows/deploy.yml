@@ -3,20 +3,20 @@ name: Deploy User App
 on:
   push:
     branches:
-      - main   # Trigger only when pushing to main branch
-  workflow_dispatch:   # Allow manual run
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy-user:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout private repo (user panel)
+      # 1. Checkout private repo
       - name: Checkout User Repo
         uses: actions/checkout@v3
         with:
           repository: Sharmila127/smsreactuserpannel-sharmila
-          token: ${{ secrets.GH_PAT }}   # ✅ Required for private repo
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 1
 
       # 2. Setup Node.js
@@ -25,26 +25,26 @@ jobs:
         with:
           node-version: '20'
 
-      # 3. Install and Build User App
+      # 3. Install and Build
       - name: Install & Build
         run: |
           npm install
           npm run build
 
-      # 4. Deploy User App build to S3 bucket under /user/
-      - name: Sync User App to S3
-        uses: aws-actions/s3-sync@v2.1.0
+      # 4. Sync User App to S3
+      - name: Sync to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
         with:
-          source-dir: 'build'
-          bucket: sms-frontend-app
-          destination-dir: 'user'   # Upload inside /user/ folder
-          region: ap-south-1
-          delete: true
+          args: --delete
         env:
+          AWS_S3_BUCKET: sms-frontend-app
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-south-1
+          SOURCE_DIR: build
+          DEST_DIR: user
 
-      # 5. Invalidate CloudFront cache
+      # 5. Invalidate CloudFront
       - name: Invalidate CloudFront
         uses: chetan/invalidate-cloudfront-action@v1
         with:
