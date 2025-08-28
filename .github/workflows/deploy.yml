@@ -3,15 +3,15 @@ name: Deploy User App
 on:
   push:
     branches:
-      - main   # Trigger when pushing to main branch
-  workflow_dispatch:   # Allow manual run from GitHub Actions tab
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy-user:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code with PAT (since repo is private)
+      # 1. Checkout code (private repo → use PAT)
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -30,18 +30,18 @@ jobs:
           npm install
           npm run build
 
-      # 4. Sync User build to S3 (/user/)
+      # 4. Sync User build to S3
       - name: Sync User App to S3
-        uses: aws-actions/s3-sync@v1
+        uses: jakejarvis/s3-sync-action@master
         with:
-          source-dir: 'user/build'
-          bucket: sms-frontend-app
-          destination-dir: 'user'   # Upload under /user/ folder in S3
-          region: 'ap-south-1'
-          delete: true
+          args: --acl public-read --delete
         env:
+          AWS_S3_BUCKET: sms-frontend-all
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-south-1
+          SOURCE_DIR: user/build
+          DEST_DIR: user
 
       # 5. Invalidate CloudFront cache
       - name: Invalidate CloudFront
