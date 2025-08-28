@@ -1,43 +1,51 @@
-name: Deploy User Panel to S3
+name: Deploy User App
 
 on:
   push:
     branches:
-      - main
+      - main   # Trigger when pushing to main branch
+  workflow_dispatch:   # Allow manual run from GitHub Actions tab
 
 jobs:
-  deploy:
+  deploy-user:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      # 1. Checkout code with PAT (since repo is private)
+      - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
 
-      - name: Setup Node
+      # 2. Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
+      # 3. Build User App
+      - name: Build User App
+        run: |
+          cd user
+          npm install
+          npm run build
 
-      - name: Build project
-        run: npm run build
-
-      - name: Deploy to S3
-        uses: aws-actions/s3-sync@v2
+      # 4. Sync User build to S3 (/user/)
+      - name: Sync User App to S3
+        uses: aws-actions/s3-sync@v1
         with:
+          source-dir: 'user/build'
           bucket: sms-frontend-app
-          region: ap-south-1
-          source: ./dist
-          destination: user
+          destination-dir: 'user'   # Upload under /user/ folder in S3
+          region: 'ap-south-1'
           delete: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Invalidate CloudFront cache
-        uses: chetan/invalidate-cloudfront-action@v2
+      # 5. Invalidate CloudFront cache
+      - name: Invalidate CloudFront
+        uses: chetan/invalidate-cloudfront-action@v1
         with:
           distribution-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
           paths: "/*"
