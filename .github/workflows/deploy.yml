@@ -3,14 +3,14 @@ name: Deploy User App
 on:
   push:
     branches:
-      - main   # Trigger only when pushing to main branch
+      - main   # Trigger only on main branch
 
 jobs:
   deploy-user:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout private repo using PAT
+      # 1. Checkout private repo with PAT
       - name: Checkout code
         uses: actions/checkout@v3
         with:
