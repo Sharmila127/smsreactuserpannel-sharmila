@@ -3,21 +3,19 @@ name: Deploy User App
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main   # runs when pushing to main branch
+  workflow_dispatch: # allow manual trigger
 
 jobs:
   deploy-user:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout private repo
-      - name: Checkout User Repo
+      # 1. Checkout repository with PAT token (fixes token error)
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
-          repository: Sharmila127/smsreactuserpannel-sharmila
-          token: ${{ secrets.GH_PAT }}
-          fetch-depth: 1
+          token: ${{ secrets.GH_PAT }}   # store your PAT as GH_PAT in repo secrets
 
       # 2. Setup Node.js
       - name: Setup Node.js
@@ -25,31 +23,21 @@ jobs:
         with:
           node-version: '20'
 
-      # 3. Install and Build
-      - name: Install & Build
+      # 3. Install dependencies & Build React app
+      - name: Install and Build
         run: |
           npm install
           npm run build
 
-      # 4. Sync User App to S3
-      - name: Sync to S3
-        uses: jakejarvis/s3-sync-action@v0.5.1
+      # 4. Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          args: --delete
-        env:
-          AWS_S3_BUCKET: sms-frontend-app
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ap-south-1
-          SOURCE_DIR: build
-          DEST_DIR: user
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1   # change if different
 
-      # 5. Invalidate CloudFront
-      - name: Invalidate CloudFront
-        uses: chetan/invalidate-cloudfront-action@v1
-        with:
-          distribution-id: E2FC1QDHTE5RCX
-          paths: "/*"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # 5. Deploy to S3
+      - name: Upload User App to S3
+        run: |
+          aws s3 sync ./build/ s3://sms-frontend-app/user --delete
