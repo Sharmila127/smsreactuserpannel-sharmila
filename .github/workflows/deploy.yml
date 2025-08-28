@@ -38,7 +38,7 @@ jobs:
       # 5️⃣ Upload to S3
       - name: Deploy to S3
         run: |
-          aws s3 sync ./dist/ s3://userpannel --delete
+          aws s3 sync ./dist/ s3://userpannel22 --delete
 
       # 6️⃣ CloudFront invalidation
       - name: Invalidate CloudFront
