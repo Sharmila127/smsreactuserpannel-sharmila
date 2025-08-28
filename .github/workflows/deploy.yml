@@ -3,15 +3,14 @@ name: Deploy User App
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main   # Trigger only when pushing to main branch
 
 jobs:
   deploy-user:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code (private repo → use PAT)
+      # 1. Checkout private repo using PAT
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -23,31 +22,30 @@ jobs:
         with:
           node-version: '20'
 
-      # 3. Build User App
+      # 3. Install and Build User App
       - name: Build User App
         run: |
-          cd user
           npm install
           npm run build
 
-      # 4. Sync User build to S3
-      - name: Sync User App to S3
-        uses: jakejarvis/s3-sync-action@master
+      # 4. Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          args: --acl public-read --delete
-        env:
-          AWS_S3_BUCKET: sms-frontend-all
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ap-south-1
-          SOURCE_DIR: user/build
-          DEST_DIR: user
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
-      # 5. Invalidate CloudFront cache
+      # 5. Sync build to S3 /user/
+      - name: Sync User App to S3
+        run: |
+          aws s3 sync build/ s3://sms-frontend-app/user --delete
+
+      # 6. Invalidate CloudFront cache
       - name: Invalidate CloudFront
         uses: chetan/invalidate-cloudfront-action@v1
         with:
-          distribution-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+          distribution-id: ${{ secrets.CLOUDFRONT_DIST_ID }}
           paths: "/*"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
